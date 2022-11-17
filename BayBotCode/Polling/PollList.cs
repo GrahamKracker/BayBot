@@ -30,6 +30,13 @@ namespace BayBot.Polling {
             return g;
         }
 
+        /// <summary>
+        /// Gets a <see cref="PollGuild"/> that matches the guild id
+        /// </summary>
+        /// <param name="guild">The id of the guild</param>
+        /// <returns>The <see cref="PollGuild"/> or null if not found</returns>
+        public PollGuild GetGuildByIdOrDefault(ulong guild) => Guilds.FirstOrDefault(g => g.Guild == guild);
+
         // To be able to use foreach loops
         public IEnumerator<PollGuild> GetEnumerator() => Guilds.GetEnumerator();
     }

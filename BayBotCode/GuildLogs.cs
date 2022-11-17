@@ -1,5 +1,4 @@
-﻿using BayBot.Core;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
 using System.IO;

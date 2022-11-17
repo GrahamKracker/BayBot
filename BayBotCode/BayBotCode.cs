@@ -34,9 +34,10 @@ namespace BayBot {
             Data.Folder = dataFolder;
             Bot = bot;
 
-            // Receive messages and slash commands
+            // Receive messages, slash commands, and components
             Bot.MessageReceived += HandleMessage;
             Bot.SlashCommandExecuted += HandleSlashCommand;
+            Bot.SelectMenuExecuted += HandleSelectMenus;
 
             // Load all the saved data
             GuildLogs.LoadLogChannels();
@@ -66,6 +67,7 @@ namespace BayBot {
         public static void Exit() {
             Bot.MessageReceived -= HandleMessage;
             Bot.SlashCommandExecuted -= HandleSlashCommand;
+            Bot.SelectMenuExecuted -= HandleSelectMenus;
         }
 
         /// <summary>
@@ -103,6 +105,15 @@ namespace BayBot {
                 }
             } else
                 await command.SendError("Not a valid command, or in a DM.");
+        }
+
+        /// <summary>
+        /// Handles select menus
+        /// </summary>
+        /// <param name="component">The select menu to handle</param>
+        public static async Task HandleSelectMenus(SocketMessageComponent component) {
+            // Pass the component through each type
+            await Polls.HandlePollOptions(component);
         }
 
         /// <summary>

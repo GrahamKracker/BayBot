@@ -19,13 +19,7 @@ namespace BayBot.Polling {
         private const string OptionIntervalName = "interval";
         private const string OptionEmojiTypeName = "emojitype";
 
-        private static readonly Dictionary<PollEmojiTypes, string[]> EmojiTypes = new() {
-            [PollEmojiTypes.Letters] = new string[] { "🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿" },
-            [PollEmojiTypes.Numbers] = new string[] { "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟" },
-            [PollEmojiTypes.Circles] = new string[] { "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪" },
-            [PollEmojiTypes.Squares] = new string[] { "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "🟫", "⬛", "⬜" },
-            [PollEmojiTypes.Thumbs] = new string[] { "👍", "👎" }
-        };
+        private const string OptionsMenuName = "pollOptionsMenu";
 
         private static PollList ActivePolls { get; set; }
 
@@ -141,38 +135,23 @@ namespace BayBot.Polling {
 
                 ActivePolls.GetGuildById(command.GuildId.Value).RegisterNew(poll);
 
-                EmbedBuilder pollEmbed = new();
-                pollEmbed.WithColor(Color.Purple);
-                pollEmbed.WithFooter($"Poll ID: {poll.Id}");
+                SelectMenuBuilder optionsMenu = new SelectMenuBuilder()
+                    .WithCustomId($"{OptionsMenuName}{command.GuildId.Value},{poll.Id}")
+                    .WithPlaceholder("Select an option.")
+                    .WithMinValues(1)
+                    .WithMaxValues(1)
+                    .AddOption("No Vote", "-1");
 
-                if (!string.IsNullOrEmpty(poll.Title))
-                    pollEmbed.WithTitle(poll.Title);
+                int optionCount = poll.OptionCount;
+                string[] emojis = poll.Emojis;
+                for (int i = 0; i < optionCount; i++)
+                    optionsMenu.AddOption(options[i], $"{i}", emote: new Emoji(emojis[i]));
 
-                if (!string.IsNullOrEmpty(poll.Question))
-                    pollEmbed.AddField("Question:", poll.Question);
+                ComponentBuilder components = new ComponentBuilder().WithSelectMenu(optionsMenu);
 
-                string[] emojis = EmojiTypes[poll.EmojiType];
-                int minLength = Math.Min(poll.Options.Length, emojis.Length);
-                for (int i = 0; i < minLength; i++)
-                    pollEmbed.AddField(poll.Options[i], emojis[i], true);
+                await command.RespondAsync(embed: poll.BuildEmbed(true, false), components: components.Build());
 
-                if (interval.Ticks > 0) {
-                    List<string> time = new();
-                    if (interval.Days > 0)
-                        time.Add($"{interval.Days} {Formatting.MatchPlurality("Day", interval.Days)}");
-                    if (interval.Hours > 0)
-                        time.Add($"{interval.Hours} {Formatting.MatchPlurality("Hour", interval.Hours)}");
-                    if (interval.Minutes > 0)
-                        time.Add($"{interval.Minutes} {Formatting.MatchPlurality("Minute", interval.Minutes)}");
-                    pollEmbed.AddField("Interval:", Formatting.ListItems(time));
-                }
-
-                await command.RespondAsync(embed: pollEmbed.Build());
-                IUserMessage pollMessage = await command.GetOriginalResponseAsync();
-                poll.OriginalMessage = pollMessage.Id;
-
-                // Don't wait for it as that's unnecessary
-                _ = pollMessage.AddReactionsAsync(emojis.Take(minLength).Select(emoji => new Emoji(emoji)));
+                poll.OriginalMessage = (await command.GetOriginalResponseAsync()).Id;
 
                 SavePolls();
             }
@@ -196,15 +175,47 @@ namespace BayBot.Polling {
                 SavePolls();
         }
 
+        // Do not respond unless success because it will lock in their decision if you do
+        public static async Task HandlePollOptions(SocketMessageComponent component) {
+            if (component.Data.CustomId.StartsWith(OptionsMenuName)) {
+                string stringChoice = component.Data.Values.First();
+                string[] stringIds = component.Data.CustomId[OptionsMenuName.Length..].Split(',');
+
+                if (int.TryParse(stringChoice, out int option) && ulong.TryParse(stringIds[0], out ulong guildId) && ulong.TryParse(stringIds[1], out ulong pollId)) {
+                    PollGuild guild = ActivePolls.GetGuildByIdOrDefault(guildId);
+
+                    if (guild is not null) {
+                        Poll poll = guild.GetByIdOrDefault(pollId);
+
+                        if (poll is not null) {
+                            Choice choice = poll.GetChoiceByUserOrDefault(component.User.Id);
+                            if (choice is not null) {
+                                if (option == -1)
+                                    poll.Choices.Remove(choice);
+                                else
+                                    choice.Option = option;
+                            } else if (option != -1)
+                                poll.Choices.Add(new Choice() { Option = option, User = component.User.Id });
+
+                            SavePolls();
+
+                            await component.UpdateAsync(message => message.Embed = poll.BuildEmbed(true, false));
+                        }
+                    }
+                }
+            }
+        }
+
         public static async Task EndPoll(SocketSlashCommand command) {
             if (command.GuildId is not null) {
                 PollGuild guild = ActivePolls.GetGuildById(command.GuildId.Value);
-                Poll poll = guild.GetById((ulong)(long)command.Data.Options.First().Value);
+                Poll poll = guild.GetByIdOrDefault((ulong)(long)command.Data.Options.First().Value);
                 if (poll is null)
                     await command.SendError("A poll with that id does not exist for this server.");
                 else {
+                    await command.DeferAsync(ephemeral: true);
                     await EndPoll(guild, poll);
-                    await command.SendSuccess("Ended poll successfully.");
+                    await command.FollowupSuccess("Ended poll successfully.");
                 }
             }
         }
@@ -212,51 +223,9 @@ namespace BayBot.Polling {
         private static async Task EndPoll(PollGuild guild, Poll poll) {
             guild.Polls.Remove(poll);
 
-            if (poll.OriginalMessage != 0 && poll.Channel != 0 && await BayBotCode.Bot.GetChannelAsync(poll.Channel) is ITextChannel channel) {
-                IMessage pollMessage = await channel.GetMessageAsync(poll.OriginalMessage);
-
-                EmbedBuilder pollEmbed = new();
-                pollEmbed.WithColor(Color.Purple);
-                pollEmbed.WithFooter($"Poll ID: {poll.Id}");
-
-                if (!string.IsNullOrEmpty(poll.Title))
-                    pollEmbed.WithTitle(poll.Title);
-
-                if (!string.IsNullOrEmpty(poll.Question))
-                    pollEmbed.AddField("Question:", poll.Question);
-
-                string[] emojis = EmojiTypes[poll.EmojiType];
-                Dictionary<string, int> pollReactCounts = pollMessage.Reactions.ToDictionary(kvp => kvp.Key.Name, kvp => kvp.Value.ReactionCount);
-                int minLength = Math.Min(poll.Options.Length, emojis.Length);
-
-                int maxCount = -1;
-                List<string> winning = new();
-
-                for (int i = 0; i < minLength; i++) {
-                    if (pollReactCounts.ContainsKey(emojis[i])) {
-                        int count = pollReactCounts[emojis[i]];
-                        if (count > maxCount) {
-                            winning.Clear();
-                            maxCount = count;
-                        }
-                        if (count == maxCount)
-                            winning.Add(emojis[i]);
-                    }
-                }
-
-                if (winning.Count > 1) {
-                    string winner = winning[BayBotCode.Random.Next(winning.Count)];
-                    winning.Clear();
-                    winning.Add(winner);
-                    pollEmbed.Description += "\n*RNG broke this tie.*";
-                }
-
-                for (int i = 0; i < minLength; i++) {
-                    string count = pollReactCounts.ContainsKey(emojis[i]) ? $"{pollReactCounts[emojis[i]] - 1}" : "?";
-                    pollEmbed.AddField($"{poll.Options[i]}: {count} votes {(winning.Contains(emojis[i]) ? "✅" : "")}", emojis[i], true);
-                }
-
-                await channel.SendMessageAsync(embed: pollEmbed.Build(), allowedMentions: AllowedMentions.None, messageReference: new MessageReference(poll.OriginalMessage));
+            if (poll.OriginalMessage != 0 && poll.Channel != 0 && await BayBotCode.Bot.GetChannelAsync(poll.Channel) is IMessageChannel channel) {
+                await ((await channel.GetMessageAsync(poll.OriginalMessage)) as IUserMessage).ModifyAsync(message => message.Embed = poll.BuildEmbed(false, false));
+                await channel.SendMessageAsync(embed: poll.BuildEmbed(false, true), allowedMentions: AllowedMentions.None, messageReference: new MessageReference(poll.OriginalMessage));
             }
         }
     }
