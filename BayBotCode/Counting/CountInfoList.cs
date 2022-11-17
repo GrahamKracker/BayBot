@@ -4,7 +4,7 @@ using System.Xml.Serialization;
 
 namespace BayBot.Counting {
     /// <summary>
-    /// A list of all counts in a list of servers
+    /// A list of all counts in a list of guilds
     /// </summary>
     [XmlRoot("CountInfoList")]
     [XmlInclude(typeof(CountInfo))]

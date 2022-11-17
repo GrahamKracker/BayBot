@@ -554,7 +554,7 @@ namespace BayBot.Counting {
         }
 
         public static async Task<bool> RecoverChannel(IMessage message, string word) {
-            if (message.Author.Id == 577258187049402382 && message.Channel is ITextChannel channel) {
+            if (message.Author.Id == ImportantUsers.BotDev && message.Channel is ITextChannel channel) {
                 await message.DeleteAsync();
                 ulong firstId = ulong.Parse(word);
                 IMessage lastMessage = (await channel.GetMessagesAsync(1).FlattenAsync()).First();
@@ -566,7 +566,7 @@ namespace BayBot.Counting {
                     await Task.Delay(100);
                     Logger.WriteLine($"{messages.Count} {firstMessage.Content}");
                 } while (messages.Last().Id != lastMessage.Id);
-                CountInfo countInfo = Counts.CountingGuilds.GetByGuild(channel.Guild.Id);
+                CountInfo countInfo = CountingGuilds.GetByGuild(channel.Guild.Id);
                 UserCount userCount = countInfo.GetByUser(lastMessage.Author.Id);
                 userCount.Count++;
                 foreach (IMessage m in messages) {
@@ -574,7 +574,7 @@ namespace BayBot.Counting {
                     userCount.Count++;
                 }
                 countInfo.Sort();
-                Counts.SaveCounts();
+                SaveCounts();
                 Logger.WriteLine("done");
             }
             return false;
