@@ -1,10 +1,11 @@
-﻿using Discord;
+﻿using BayBot.Utils;
+using Discord;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 
-namespace BayBot.Polling {
+namespace BayBot.Commands.Polling {
     /// <summary>
     /// Represents a poll
     /// </summary>

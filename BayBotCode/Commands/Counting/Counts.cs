@@ -1,4 +1,5 @@
 ﻿using BayBot.Core;
+using BayBot.Utils;
 using Discord;
 using Discord.WebSocket;
 using System;
@@ -9,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace BayBot.Counting {
+namespace BayBot.Commands.Counting {
     public static class Counts {
         private const string CountChannelCommandName = "countchannel";
         private const string CountChampRoleCommandName = "countchamprole";
@@ -104,7 +105,7 @@ namespace BayBot.Counting {
 
                                 ResolveUserCountRank(countInfo, message.Author.Id, out int rank, out int oldRank);
 
-                                if ((rank < oldRank && rank == 0) || countInfo.UsersCount == 1)
+                                if (rank < oldRank && rank == 0 || countInfo.UsersCount == 1)
                                     await ResolveCountChampRole(countInfo, message.Author as IGuildUser);
 
                                 // Don't wait for it as that's unnecessary
@@ -411,7 +412,7 @@ namespace BayBot.Counting {
                             userCount.Count = newCount;
 
                             ResolveUserCountRank(countInfo, user.Id, out int rank, out int oldRank);
-                            if ((rank < oldRank && rank == 0) || countInfo.UsersCount == 1)
+                            if (rank < oldRank && rank == 0 || countInfo.UsersCount == 1)
                                 await ResolveCountChampRole(countInfo, user, true);
                             else if (rank > oldRank && oldRank == 0)
                                 await ResolveCountChampRole(countInfo, user, false);

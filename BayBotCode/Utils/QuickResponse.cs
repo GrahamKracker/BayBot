@@ -2,7 +2,7 @@
 using Discord.WebSocket;
 using System.Threading.Tasks;
 
-namespace BayBot {
+namespace BayBot.Utils {
     /// <summary>
     /// Used for quickly responding to interactions such as slash commands with simple embeded responses
     /// </summary>

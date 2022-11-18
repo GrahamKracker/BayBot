@@ -1,11 +1,12 @@
-﻿using Discord;
+﻿using BayBot.Utils;
+using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BayBot {
+namespace BayBot.Commands.Logging {
     public static class GuildLogs {
         private const string LogChannelCommandName = "logchannel";
         private const string SetLogChannelSubCommandName = "set";

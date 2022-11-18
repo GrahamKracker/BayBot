@@ -1,4 +1,4 @@
-﻿namespace BayBot {
+﻿namespace BayBot.Utils {
     internal static class ImportantUsers {
         /// <summary>
         /// Bot dev (me Baydock 😀)

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Serialization;
 
-namespace BayBot.Polling {
+namespace BayBot.Commands.Polling {
     /// <summary>
     /// A class that conatians a guild's polls
     /// </summary>
@@ -18,7 +18,7 @@ namespace BayBot.Polling {
         /// The id of the guild
         /// </summary>
         [XmlAttribute("Guild")]
-        public ulong Guild {  get; set; }
+        public ulong Guild { get; set; }
 
         /// <summary>
         /// List of polls active in this guild

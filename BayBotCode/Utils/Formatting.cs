@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace BayBot {
+namespace BayBot.Utils {
     /// <summary>
     /// A class for formatting strings
     /// </summary>

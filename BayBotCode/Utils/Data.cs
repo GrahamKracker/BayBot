@@ -1,7 +1,7 @@
 ﻿using BayBot.Core;
 using System.IO;
 
-namespace BayBot {
+namespace BayBot.Utils {
     /// <summary>
     /// Handles the saving a loading of files
     /// </summary>

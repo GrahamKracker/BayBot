@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Serialization;
 
-namespace BayBot.Counting {
+namespace BayBot.Commands.Counting {
     /// <summary>
     /// A list of all counts in a list of guilds
     /// </summary>

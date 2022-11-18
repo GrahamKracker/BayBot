@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BayBot.Utils;
+using Discord;
 using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace BayBot.Polling {
+namespace BayBot.Commands.Polling {
     public static class Polls {
         private const string ActivePollsFile = "polls.active";
 
@@ -224,7 +225,7 @@ namespace BayBot.Polling {
             guild.Polls.Remove(poll);
 
             if (poll.OriginalMessage != 0 && poll.Channel != 0 && await BayBotCode.Bot.GetChannelAsync(poll.Channel) is IMessageChannel channel) {
-                await ((await channel.GetMessageAsync(poll.OriginalMessage)) as IUserMessage).ModifyAsync(message => message.Embed = poll.BuildEmbed(false, false));
+                await (await channel.GetMessageAsync(poll.OriginalMessage) as IUserMessage).ModifyAsync(message => message.Embed = poll.BuildEmbed(false, false));
                 await channel.SendMessageAsync(embed: poll.BuildEmbed(false, true), allowedMentions: AllowedMentions.None, messageReference: new MessageReference(poll.OriginalMessage));
             }
         }

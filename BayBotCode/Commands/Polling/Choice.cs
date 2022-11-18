@@ -1,6 +1,6 @@
 ﻿using System.Xml.Serialization;
 
-namespace BayBot.Polling {
+namespace BayBot.Commands.Polling {
     /// <summary>
     /// Used as a store for a user and their choice
     /// </summary>

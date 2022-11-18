@@ -1,9 +1,10 @@
-﻿using Discord;
+﻿using BayBot.Utils;
+using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BayBot {
+namespace BayBot.Commands.Info {
     public static class Info {
         private const string PingCommandName = "ping";
         private const string LatencyCommandName = "latency";

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Serialization;
 
-namespace BayBot.Polling {
+namespace BayBot.Commands.Polling {
     /// <summary>
     /// A list of all polls in a list of guilds
     /// </summary>

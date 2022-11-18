@@ -1,6 +1,8 @@
-﻿using BayBot.Core;
-using BayBot.Counting;
-using BayBot.Polling;
+﻿using BayBot.Commands.Counting;
+using BayBot.Commands.Logging;
+using BayBot.Commands.Polling;
+using BayBot.Core;
+using BayBot.Utils;
 using Discord;
 using Discord.WebSocket;
 using System;
@@ -36,6 +38,7 @@ namespace BayBot {
 
             // Receive messages, slash commands, and components
             Bot.MessageReceived += HandleMessage;
+            Bot.MessageDeleted += HandleDeletedMessage;
             Bot.SlashCommandExecuted += HandleSlashCommand;
             Bot.SelectMenuExecuted += HandleSelectMenus;
 
@@ -225,6 +228,15 @@ namespace BayBot {
                 commandLog.WithCurrentTimestamp();
                 await (await channel.Guild.GetTextChannelAsync(GuildLogs.LogChannels[channel.GuildId])).SendMessageAsync(embed: commandLog.Build());
             }
+        }
+
+        /// <summary>
+        /// Handle messages being deleted
+        /// </summary>
+        /// <param name="message">The message that was deleted</param>
+        /// <param name="channel">The channel that the message was in</param>
+        public static async Task HandleDeletedMessage(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel) {
+
         }
 
         /// <summary>

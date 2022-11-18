@@ -1,4 +1,4 @@
-﻿namespace BayBot.Polling {
+﻿namespace BayBot.Commands.Polling {
     public enum PollEmojiTypes {
         Thumbs,
         Letters,
