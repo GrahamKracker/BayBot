@@ -1,4 +1,5 @@
-﻿using BayBot.Utils;
+﻿using BayBot.Core;
+using BayBot.Utils;
 using Discord;
 using System;
 using System.Collections.Generic;
@@ -82,6 +83,18 @@ namespace BayBot.Commands.Polling {
         public DateTime EndTime { get; set; } = DateTime.MaxValue;
 
         /// <summary>
+        /// The url to the attachment of the poll
+        /// </summary>
+        [XmlAttribute("AttachmentUrl")]
+        public string AttachmentUrl { get; set; } = null;
+
+        /// <summary>
+        /// The type of the attachment of the poll
+        /// </summary>
+        [XmlAttribute("AttachmentType")]
+        public string AttachmentType { get; set; } = null;
+
+        /// <summary>
         /// Gets the choice made by the given user
         /// </summary>
         /// <param name="userId">The id of the user</param>
@@ -99,6 +112,18 @@ namespace BayBot.Commands.Polling {
         /// </summary>
         [XmlIgnore]
         public string[] Emojis => EmojiTypes[EmojiType];
+
+        /// <summary>
+        /// Whether <see cref="AttachmentUrl"/> points to an attachment
+        /// </summary>
+        [XmlIgnore]
+        public bool HasAttachment => !string.IsNullOrWhiteSpace(AttachmentUrl);
+
+        /// <summary>
+        /// Whether <see cref="AttachmentType"/> is an image type or not
+        /// </summary>
+        [XmlIgnore]
+        public bool HasImageAttachment => !string.IsNullOrEmpty(AttachmentType) && AttachmentType.StartsWith("image/");
 
         /// <summary>
         /// Creates a poll embed
@@ -164,11 +189,16 @@ namespace BayBot.Commands.Polling {
             if (showResults) {
                 // Add the winner to the end of the embed
                 pollEmbed.AddField("Winner:", $"{Options[winner]} {emojis[winner]}");
-            } else if (EndTime != DateTime.MaxValue) {
-                // Add the end time to the end of the embed
-                string name = isActive ? "Ends at:" : "Ended at:";
-                TimestampTag endtag = TimestampTag.FromDateTimeOffset(EndTime, TimestampTagStyles.ShortDateTime);
-                pollEmbed.AddField(name, endtag);
+            } else {
+                if (EndTime != DateTime.MaxValue) {
+                    // Add the end time to the end of the embed
+                    string name = isActive ? "Ends at:" : "Ended at:";
+                    TimestampTag endtag = TimestampTag.FromDateTimeOffset(EndTime, TimestampTagStyles.ShortDateTime);
+                    pollEmbed.AddField(name, endtag);
+                }
+
+                if (HasAttachment && HasImageAttachment)
+                    pollEmbed.WithImageUrl(AttachmentUrl);
             }
 
             return pollEmbed.Build();

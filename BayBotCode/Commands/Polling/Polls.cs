@@ -1,10 +1,12 @@
-﻿using BayBot.Utils;
+﻿using BayBot.Core;
+using BayBot.Utils;
 using Discord;
 using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
@@ -19,6 +21,7 @@ namespace BayBot.Commands.Polling {
         private const string OptionQuestionName = "question";
         private const string OptionIntervalName = "interval";
         private const string OptionEmojiTypeName = "emojitype";
+        private const string OptionAttachmentName = "attachment";
 
         private const string OptionsMenuName = "pollOptionsMenu";
 
@@ -56,8 +59,9 @@ namespace BayBot.Commands.Polling {
                     .AddChoice("numbers", (int)PollEmojiTypes.Numbers)
                     .AddChoice("circles", (int)PollEmojiTypes.Circles)
                     .AddChoice("squares", (int)PollEmojiTypes.Squares))
-                .AddOptions(Enumerable.Range(1, 20).Select(number => new SlashCommandOptionBuilder().WithName($"option{number}")
-                    .WithDescription($"Option {number}")
+                .AddOption(OptionAttachmentName, ApplicationCommandOptionType.Attachment, "An attachment, under 8MB, to go along with the poll. (eg. .png, .txt, .dll, etc)", isRequired: false)
+                .AddOptions(Enumerable.Range(1, 20).Select(num => new SlashCommandOptionBuilder().WithName($"option{num}")
+                    .WithDescription($"Option {num}")
                     .WithRequired(false)
                     .WithType(ApplicationCommandOptionType.String)).ToArray());
             commands.Add(poll.Build());
@@ -70,7 +74,7 @@ namespace BayBot.Commands.Polling {
             commands.Add(endPoll.Build());
         }
 
-        public static async Task HandlePollCommands(SocketSlashCommand command) {
+        public static async Task HandleCommands(SocketSlashCommand command) {
             switch (command.CommandName) {
                 case PollCommandName:
                     await SendPoll(command);
@@ -92,7 +96,9 @@ namespace BayBot.Commands.Polling {
 
                 TimeSpan interval = new(0);
 
-                foreach (var option in command.Data.Options) {
+                IAttachment attachment = null;
+
+                foreach (SocketSlashCommandDataOption option in command.Data.Options) {
                     switch (option.Name) {
                         case OptionTitleName:
                             poll.Title = option.Value as string;
@@ -117,6 +123,11 @@ namespace BayBot.Commands.Polling {
                             break;
                         case OptionEmojiTypeName:
                             poll.EmojiType = (PollEmojiTypes)(long)option.Value;
+                            break;
+                        case OptionAttachmentName:
+                            attachment = (IAttachment)option.Value;
+                            poll.AttachmentUrl = attachment.Url;
+                            poll.AttachmentType = attachment.ContentType;
                             break;
                         case string s when s.StartsWith("option"):
                             options.Add(option.Value as string);
@@ -150,7 +161,22 @@ namespace BayBot.Commands.Polling {
 
                 ComponentBuilder components = new ComponentBuilder().WithSelectMenu(optionsMenu);
 
-                await command.RespondAsync(embed: poll.BuildEmbed(true, false), components: components.Build());
+                if (poll.HasAttachment && attachment.Size > 8 * 1024 * 1024) {
+                    await command.RespondAsync(text: "Please no files over 8MB, thanks 😊", ephemeral: true);
+                } else if (poll.HasAttachment && !poll.HasImageAttachment) {
+                    await command.DeferAsync();
+
+                    HttpClient httpClient = new();
+                    Stream fileStream = await httpClient.GetStreamAsync(attachment.Url);
+                    FileAttachment file = new(fileStream, attachment.Filename, attachment.Description, attachment.IsSpoiler());
+
+                    await command.ModifyOriginalResponseAsync(message => {
+                        message.Embed = poll.BuildEmbed(true, false);
+                        message.Components = components.Build();
+                        message.Attachments = new FileAttachment[] { file };
+                    });
+                } else
+                    await command.RespondAsync(embed: poll.BuildEmbed(true, false), components: components.Build());
 
                 poll.OriginalMessage = (await command.GetOriginalResponseAsync()).Id;
 
@@ -224,10 +250,24 @@ namespace BayBot.Commands.Polling {
         private static async Task EndPoll(PollGuild guild, Poll poll) {
             guild.Polls.Remove(poll);
 
-            if (poll.OriginalMessage != 0 && poll.Channel != 0 && await BayBotCode.Bot.GetChannelAsync(poll.Channel) is IMessageChannel channel) {
-                await (await channel.GetMessageAsync(poll.OriginalMessage) as IUserMessage).ModifyAsync(message => message.Embed = poll.BuildEmbed(false, false));
-                await channel.SendMessageAsync(embed: poll.BuildEmbed(false, true), allowedMentions: AllowedMentions.None, messageReference: new MessageReference(poll.OriginalMessage));
+            try {
+                if (poll.OriginalMessage != 0 && poll.Channel != 0 && await BayBotCode.Bot.GetChannelAsync(poll.Channel) is IMessageChannel channel) {
+                    if (await channel.GetMessageAsync(poll.OriginalMessage) as IUserMessage is not null) {
+                        await (await channel.GetMessageAsync(poll.OriginalMessage) as IUserMessage).ModifyAsync(message => message.Embed = poll.BuildEmbed(false, false));
+                        await channel.SendMessageAsync(embed: poll.BuildEmbed(false, true), allowedMentions: AllowedMentions.None, messageReference: new MessageReference(poll.OriginalMessage));
+                    }
+                }
+            } catch (Exception e) {
+                Logger.WriteLine(e.ToString());
+                if (e.InnerException is not null)
+                    Logger.WriteLine(e.InnerException.ToString());
             }
+
+            SavePolls();
+        }
+
+        internal static Poll FirstOrDefault(Func<object, bool> value) {
+            throw new NotImplementedException();
         }
     }
 }

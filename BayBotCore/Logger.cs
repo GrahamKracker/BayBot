@@ -45,6 +45,14 @@ public static class Logger {
     /// </summary>
     /// <param name="o">The object to be put</param>
     public static void WriteLine(object o) => WriteLine(o.ToString());
+
+    /// <summary>
+    /// Clears the output
+    /// </summary>
+    public static void Clear() {
+        Output = "";
+        OnLog?.Invoke(Output);
+    }
 }
 
 public delegate void OnLog(string output);

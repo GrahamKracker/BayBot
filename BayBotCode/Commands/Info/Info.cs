@@ -19,7 +19,7 @@ namespace BayBot.Commands.Info {
             commands.Add(latency.Build());
         }
 
-        public static async Task HandleInfoCommands(SocketSlashCommand command) {
+        public static async Task HandleCommands(SocketSlashCommand command) {
             switch (command.CommandName) {
                 case PingCommandName:
                     await SendPing(command);

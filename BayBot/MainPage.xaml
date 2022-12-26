@@ -20,6 +20,11 @@
             <StackLayout Orientation="Horizontal"
                          HorizontalOptions="EndAndExpand"
                          HeightRequest="75">
+                <Button Text="Clear"
+                        Clicked="ClearButtonClicked"
+                        WidthRequest="75"
+                        HeightRequest="75"
+                        Margin="0,0,25,0"/>
                 <Button Text="Sleep"
                         Clicked="SleepButtonClicked"
                         WidthRequest="75"

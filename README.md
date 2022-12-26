@@ -6,6 +6,8 @@
  * Polls
  * Log channel for commands
  * Counting channel
+ * Reaction roles
+ * Echoed messages
  * More to come...
 
 # How it works

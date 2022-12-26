@@ -245,7 +245,7 @@ namespace BayBot.Commands.Counting {
             commands.Add(fullLeaderboard.Build());
         }
 
-        public static async Task HandleCountCommands(SocketSlashCommand command) {
+        public static async Task HandleCommands(SocketSlashCommand command) {
             if (command.GuildId is not null) {
                 switch (command.CommandName) {
                     case CountChannelCommandName:
@@ -371,6 +371,7 @@ namespace BayBot.Commands.Counting {
                 }
                 case RecoverSubCommandName: {
                     CountInfo countInfo = CountingGuilds.GetByGuildOrDefault(command.GuildId.Value);
+                    // TODO: unravel this terrible nested if statement
                     if (countInfo is not null) {
                         if (countInfo.Channel != 0) {
                             if (countInfo.LastMessage != 0) {

@@ -1,5 +1,6 @@
 ﻿using BayBot.Core;
 using Microsoft.Maui.Controls;
+using System;
 using System.Threading.Tasks;
 
 namespace BayBot;
@@ -17,9 +18,11 @@ public partial class MainPage : ContentPage {
         });
     }
 
-    private void LoadCodeButtonClicked(object sender, System.EventArgs e) => BayBot.LoadCode();
+    private void LoadCodeButtonClicked(object sender, EventArgs e) => BayBot.LoadCode();
 
-    private void SleepButtonClicked(object sender, System.EventArgs e) => SleepCover.IsVisible = true;
+    private void SleepButtonClicked(object sender, EventArgs e) => SleepCover.IsVisible = true;
 
-    private void WakeButtonClicked(object sender, System.EventArgs e) => SleepCover.IsVisible = false;
+    private void WakeButtonClicked(object sender, EventArgs e) => SleepCover.IsVisible = false;
+
+    private void ClearButtonClicked(object sender, EventArgs e) => Logger.Clear();
 }

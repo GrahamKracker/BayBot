@@ -44,12 +44,13 @@ namespace BayBot.Commands.Logging {
                 .AddOption(new SlashCommandOptionBuilder().WithName(SetLogChannelSubCommandName)
                     .WithDescription("Sets the channel that logs will be sent to.")
                     .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption("channel", ApplicationCommandOptionType.Channel, "The channel the logs will be in", isRequired: true))
+                    .AddOption("channel", ApplicationCommandOptionType.Channel, "The channel the logs will be in",
+                        channelTypes: new(new ChannelType[] { ChannelType.News, ChannelType.Text }), isRequired: true))
                 .AddOption(RemoveLogChannelSubCommandName, ApplicationCommandOptionType.SubCommand, "Stops logs from being sent to the currently set channel.");
             commands.Add(setLogChannel.Build());
         }
 
-        public static async Task HandleLogCommands(SocketSlashCommand command) {
+        public static async Task HandleCommands(SocketSlashCommand command) {
             switch (command.CommandName) {
                 case LogChannelCommandName:
                     await SetLogChannel(command);
@@ -62,17 +63,15 @@ namespace BayBot.Commands.Logging {
                 SocketSlashCommandDataOption subCommand = command.Data.Options.First();
                 switch (subCommand.Name) {
                     case SetLogChannelSubCommandName:
-                        if (subCommand.Options.First().Value is ITextChannel channel) {
-                            if (LogChannels.ContainsKey(command.GuildId.Value))
-                                LogChannels[command.GuildId.Value] = channel.Id;
-                            else
-                                LogChannels.Add(command.GuildId.Value, channel.Id);
+                        IMessageChannel channel = subCommand.Options.First().Value as IMessageChannel;
+                        if (LogChannels.ContainsKey(command.GuildId.Value))
+                            LogChannels[command.GuildId.Value] = channel.Id;
+                        else
+                            LogChannels.Add(command.GuildId.Value, channel.Id);
 
-                            SaveLogChannels();
+                        SaveLogChannels();
 
-                            await command.SendSuccess($"Set log channel to <#{channel.Id}>.", false);
-                        } else
-                            await command.SendError($"The channel must be a standard text channel.");
+                        await command.SendSuccess($"Set log channel to <#{channel.Id}>.", false);
                         break;
 
                     case RemoveLogChannelSubCommandName:

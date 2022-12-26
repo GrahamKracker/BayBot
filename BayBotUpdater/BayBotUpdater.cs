@@ -21,13 +21,15 @@ namespace BayBot.Updater {
 
         public static void Main(string[] args) {
             // Send BayBotCode.dll
-            SendData(@"D:\Documents\Programs\BayBot\BayBotCode\bin\Debug\net6.0\BayBotCode.dll");
+            SendData(@"D:\Documents\Programs\BayBot\BayBotCode\bin\Debug\net7.0\BayBotCode.dll");
             Console.WriteLine("Sent Code");
 
             // Send every resource
-            foreach (string path in Directory.GetFiles(@"D:\Documents\Programs\BayBot\BayBotCode\bin\Debug\net6.0\Resources", ".")) {
-                SendData(path);
-                Console.WriteLine($"Sent {Path.GetFileName(path)}");
+            if (Directory.Exists(@"D:\Documents\Programs\BayBot\BayBotCode\bin\Debug\net7.0\Resources")) {
+                foreach (string path in Directory.GetFiles(@"D:\Documents\Programs\BayBot\BayBotCode\bin\Debug\net7.0\Resources", ".")) {
+                    SendData(path);
+                    Console.WriteLine($"Sent {Path.GetFileName(path)}");
+                }
             }
         }
     }

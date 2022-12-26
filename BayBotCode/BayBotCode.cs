@@ -1,6 +1,9 @@
 ﻿using BayBot.Commands.Counting;
+using BayBot.Commands.Echo;
+using BayBot.Commands.Info;
 using BayBot.Commands.Logging;
 using BayBot.Commands.Polling;
+using BayBot.Commands.ReactionRoles;
 using BayBot.Core;
 using BayBot.Utils;
 using Discord;
@@ -38,7 +41,6 @@ namespace BayBot {
 
             // Receive messages, slash commands, and components
             Bot.MessageReceived += HandleMessage;
-            Bot.MessageDeleted += HandleDeletedMessage;
             Bot.SlashCommandExecuted += HandleSlashCommand;
             Bot.SelectMenuExecuted += HandleSelectMenus;
 
@@ -46,6 +48,7 @@ namespace BayBot {
             GuildLogs.LoadLogChannels();
             Counts.LoadCounts();
             Polls.LoadPolls();
+            Echo.LoadMessages();
 
             // Register all the slash commands
             try {
@@ -55,6 +58,8 @@ namespace BayBot {
                 Info.AddSlashCommands(commands);
                 GuildLogs.AddSlashCommands(commands);
                 Counts.AddSlashCommands(commands);
+                ReactionRoles.AddSlashCommands(commands);
+                Echo.AddSlashCommands(commands);
 
                 Bot.BulkOverwriteGlobalApplicationCommandsAsync(commands.ToArray());
             } catch (Exception e) {
@@ -79,16 +84,18 @@ namespace BayBot {
         /// <param name="command">The slash command to handle</param>
         private static async Task HandleSlashCommand(SocketSlashCommand command) {
             // Pass the command through each type
-            await Polls.HandlePollCommands(command);
-            await Info.HandleInfoCommands(command);
-            await GuildLogs.HandleLogCommands(command);
-            await Counts.HandleCountCommands(command);
+            await Polls.HandleCommands(command);
+            await Info.HandleCommands(command);
+            await GuildLogs.HandleCommands(command);
+            await Counts.HandleCommands(command);
+            await ReactionRoles.HandleCommands(command);
+            await Echo.HandleCommands(command);
 
             // Test if the command was handled (and not in dms) to send a log
             if (command.HasResponded && command.GuildId is not null) {
                 IGuild guild = Bot.GetGuild(command.GuildId.Value);
                 // Test if this guid has a log channel set
-                if (GuildLogs.LogChannels.ContainsKey(guild.Id)) {
+                if (GuildLogs.LogChannels.TryGetValue(guild.Id, out ulong logChannelId)) {
                     // Get the command options and truncate it to a max value
                     string commandOptions = UnravelCommandOptions(command.Data.Options);
                     commandOptions = commandOptions.Length > 1024 ? commandOptions[..1023] : commandOptions;
@@ -102,7 +109,7 @@ namespace BayBot {
                         .WithCurrentTimestamp();
 
                     // Get the log channel and send the log
-                    ITextChannel logChannel = await guild.GetTextChannelAsync(GuildLogs.LogChannels[guild.Id]);
+                    IMessageChannel logChannel = await guild.GetChannelAsync(logChannelId) as IMessageChannel;
                     if (logChannel is not null)
                         await logChannel.SendMessageAsync(embed: commandLog.Build());
                 }
@@ -217,7 +224,7 @@ namespace BayBot {
             };
 
             // If succeeded send log in log channel
-            if (commandSuccess && message.Channel is ITextChannel channel && GuildLogs.LogChannels.ContainsKey(channel.GuildId)) {
+            if (commandSuccess && message.Channel is IGuildChannel channel && GuildLogs.LogChannels.ContainsKey(channel.GuildId)) {
                 EmbedBuilder commandLog = new();
                 commandLog.WithTitle("Command Used");
                 commandLog.WithDescription($"By <@{message.Author.Id}>\nIn <#{channel.Id}>");
@@ -226,24 +233,21 @@ namespace BayBot {
                     commandLog.AddField("Params:", string.Join(' ', words));
                 commandLog.WithColor(Color.Blue);
                 commandLog.WithCurrentTimestamp();
-                await (await channel.Guild.GetTextChannelAsync(GuildLogs.LogChannels[channel.GuildId])).SendMessageAsync(embed: commandLog.Build());
+                await ((await channel.Guild.GetChannelAsync(GuildLogs.LogChannels[channel.GuildId])) as IMessageChannel).SendMessageAsync(embed: commandLog.Build());
             }
-        }
-
-        /// <summary>
-        /// Handle messages being deleted
-        /// </summary>
-        /// <param name="message">The message that was deleted</param>
-        /// <param name="channel">The channel that the message was in</param>
-        public static async Task HandleDeletedMessage(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel) {
-
         }
 
         /// <summary>
         /// Updates only polls currently
         /// </summary>
         public static async Task Update() {
-            await Polls.HandlePolls();
+            try {
+                await Polls.HandlePolls();
+            } catch (Exception e) {
+                Logger.WriteLine(e.ToString());
+                if (e.InnerException is not null)
+                    Logger.WriteLine(e.InnerException.ToString());
+            }
         }
     }
 }
