@@ -45,7 +45,7 @@ namespace BayBot.Commands.Logging {
                     .WithDescription("Sets the channel that logs will be sent to.")
                     .WithType(ApplicationCommandOptionType.SubCommand)
                     .AddOption("channel", ApplicationCommandOptionType.Channel, "The channel the logs will be in",
-                        channelTypes: new(new ChannelType[] { ChannelType.News, ChannelType.Text }), isRequired: true))
+                        channelTypes: new() { ChannelType.News, ChannelType.Text }, isRequired: true))
                 .AddOption(RemoveLogChannelSubCommandName, ApplicationCommandOptionType.SubCommand, "Stops logs from being sent to the currently set channel.");
             commands.Add(setLogChannel.Build());
         }

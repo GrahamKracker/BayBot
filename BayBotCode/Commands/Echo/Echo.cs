@@ -1,5 +1,4 @@
-﻿using BayBot.Core;
-using BayBot.Utils;
+﻿using BayBot.Utils;
 using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
@@ -196,7 +195,7 @@ namespace BayBot.Commands.Echo {
 
             string messageNames = "";
 
-            foreach(var message in guild.Messages)
+            foreach (var message in guild.Messages)
                 messageNames += message.Name + "\n";
 
             EmbedBuilder embed = new EmbedBuilder().WithTitle("Echoable Messages")

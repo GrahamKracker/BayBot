@@ -15,7 +15,7 @@
                 <Label
                     x:Name="Output"
                     FontSize="16"
-                    TextColor="White"/>
+                    TextColor="LightSlateGray"/>
             </ScrollView>
             <StackLayout Orientation="Horizontal"
                          HorizontalOptions="EndAndExpand"
@@ -24,15 +24,21 @@
                         Clicked="ClearButtonClicked"
                         WidthRequest="75"
                         HeightRequest="75"
+                        BackgroundColor="DarkSlateGray"
+                        TextColor="LightSlateGray"
                         Margin="0,0,25,0"/>
                 <Button Text="Sleep"
                         Clicked="SleepButtonClicked"
                         WidthRequest="75"
                         HeightRequest="75"
+                        BackgroundColor="DarkSlateGray"
+                        TextColor="LightSlateGray"
                         Margin="0,0,25,0"/>
                 <Button Text="Load&#x0a;Code"
                         Clicked="LoadCodeButtonClicked"
                         WidthRequest="75"
+                        BackgroundColor="DarkSlateGray"
+                        TextColor="LightSlateGray"
                         HeightRequest="75"/>
             </StackLayout>
         </StackLayout>

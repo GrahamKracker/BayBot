@@ -1,5 +1,6 @@
 ﻿using BayBot.Commands.Counting;
 using BayBot.Commands.Echo;
+using BayBot.Commands.ForumUpdates;
 using BayBot.Commands.Info;
 using BayBot.Commands.Logging;
 using BayBot.Commands.Polling;
@@ -39,16 +40,18 @@ namespace BayBot {
             Data.Folder = dataFolder;
             Bot = bot;
 
-            // Receive messages, slash commands, and components
+            // Receive events
             Bot.MessageReceived += HandleMessage;
             Bot.SlashCommandExecuted += HandleSlashCommand;
             Bot.SelectMenuExecuted += HandleSelectMenus;
+            Bot.ThreadCreated += HandleThreadCreated;
 
             // Load all the saved data
             GuildLogs.LoadLogChannels();
             Counts.LoadCounts();
             Polls.LoadPolls();
             Echo.LoadMessages();
+            ForumUpdates.LoadForums();
 
             // Register all the slash commands
             try {
@@ -60,6 +63,7 @@ namespace BayBot {
                 Counts.AddSlashCommands(commands);
                 ReactionRoles.AddSlashCommands(commands);
                 Echo.AddSlashCommands(commands);
+                ForumUpdates.AddSlashCommands(commands);
 
                 Bot.BulkOverwriteGlobalApplicationCommandsAsync(commands.ToArray());
             } catch (Exception e) {
@@ -76,6 +80,7 @@ namespace BayBot {
             Bot.MessageReceived -= HandleMessage;
             Bot.SlashCommandExecuted -= HandleSlashCommand;
             Bot.SelectMenuExecuted -= HandleSelectMenus;
+            Bot.ThreadCreated -= HandleThreadCreated;
         }
 
         /// <summary>
@@ -90,6 +95,7 @@ namespace BayBot {
             await Counts.HandleCommands(command);
             await ReactionRoles.HandleCommands(command);
             await Echo.HandleCommands(command);
+            await ForumUpdates.HandleCommands(command);
 
             // Test if the command was handled (and not in dms) to send a log
             if (command.HasResponded && command.GuildId is not null) {
@@ -224,7 +230,7 @@ namespace BayBot {
             };
 
             // If succeeded send log in log channel
-            if (commandSuccess && message.Channel is IGuildChannel channel && GuildLogs.LogChannels.ContainsKey(channel.GuildId)) {
+            if (commandSuccess && message.Channel is IGuildChannel channel && GuildLogs.LogChannels.TryGetValue(channel.GuildId, out ulong value)) {
                 EmbedBuilder commandLog = new();
                 commandLog.WithTitle("Command Used");
                 commandLog.WithDescription($"By <@{message.Author.Id}>\nIn <#{channel.Id}>");
@@ -233,8 +239,16 @@ namespace BayBot {
                     commandLog.AddField("Params:", string.Join(' ', words));
                 commandLog.WithColor(Color.Blue);
                 commandLog.WithCurrentTimestamp();
-                await ((await channel.Guild.GetChannelAsync(GuildLogs.LogChannels[channel.GuildId])) as IMessageChannel).SendMessageAsync(embed: commandLog.Build());
+                await ((await channel.Guild.GetChannelAsync(value)) as IMessageChannel).SendMessageAsync(embed: commandLog.Build());
             }
+        }
+
+        /// <summary>
+        /// Receive when a thread is created on a guild channel or forum
+        /// </summary>
+        /// <param name="thread">The thread created</param>
+        public static async Task HandleThreadCreated(SocketThreadChannel thread) {
+            await ForumUpdates.TrySendUpdate(thread);
         }
 
         /// <summary>
